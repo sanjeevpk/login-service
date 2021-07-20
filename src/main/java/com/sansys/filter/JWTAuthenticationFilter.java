@@ -1,7 +1,6 @@
 package com.sansys.filter;
 
 import java.io.IOException;
-
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -16,7 +15,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.sansys.service.CustomUserDetailsService;
+import com.sansys.utility.ApplicationConstants;
 import com.sansys.utility.JWTUtility;
+
+import io.jsonwebtoken.ExpiredJwtException;
 
 /*
  * Copyright (C) SanSys Pvt. Ltd. SanSys is a registered trademark and the SanSys
@@ -56,18 +58,29 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter{
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
         throws ServletException, IOException {
         
-        String authorizationHeader = request.getHeader("Authorization");
+        String authorizationHeader = request.getHeader(ApplicationConstants.AUTHORIZATION);
         String userName = null;
         String token = null;
         
-        if(authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+        if(authorizationHeader != null && authorizationHeader.startsWith(ApplicationConstants.BEARER)) {
             token = authorizationHeader.substring(7);
             
             try {
                 
                 userName = jwtUtikity.getUsernameFromToken(token);
                 
-            }catch (Exception e) {
+            }catch(ExpiredJwtException e){
+                System.out.println("JWT Token Expired !!!");
+                String isRefreshToken = request.getHeader(ApplicationConstants.IS_REFRESH_TOKEN);
+                String requestURL = request.getRequestURL().toString();
+                // allow for Refresh Token creation if following conditions are true.
+                if (isRefreshToken != null && isRefreshToken.equals(ApplicationConstants.TRUE) && requestURL.contains(ApplicationConstants.REFRESHTOKEN)) {
+                    allowForRefreshToken(e, request);
+                } else
+                    request.setAttribute(ApplicationConstants.EXCEPTION, e);
+
+            }
+            catch (Exception e) {
                 e.printStackTrace();
             }
             
@@ -81,6 +94,21 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter{
             System.out.println("Invalid Token!");
         }
         filterChain.doFilter(request, response);
+    }
+    
+    private void allowForRefreshToken(ExpiredJwtException ex, HttpServletRequest request) {
+
+        // create a UsernamePasswordAuthenticationToken with null values.
+        UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
+                null, null, null);
+        // After setting the Authentication in the context, we specify
+        // that the current user is authenticated. So it passes the
+        // Spring Security Configurations successfully.
+        SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+        // Set the claims so that in controller we will be using it to create
+        // new JWT
+        request.setAttribute(ApplicationConstants.CLAIMS, ex.getClaims());
+
     }
 
 }

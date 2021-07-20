@@ -40,10 +40,16 @@ public class JWTUtility implements Serializable{
 
     private static final long serialVersionUID = 5576226350768413901L;
     
-    public static final long JWT_TOKEN_VALIDITY = 5*60*60;
-    
     @Value("${jwt.secret}")
     private String secretKey;
+
+    @Value("${jwt.token.validity}")
+    private String jwtTokenValidity;
+    
+    @Value("${jwt.refreshToken.validity}")
+    private String jwtRefreshTokenValidity;
+    
+//    public static final long JWT_TOKEN_VALIDITY = 5*60*60;
     
     public JWTUtility() {
     }
@@ -96,7 +102,6 @@ public class JWTUtility implements Serializable{
         return doGenerateToken(claims, userDetails.getUsername());
     }
 
-
     //while creating the token -
     //1. Define  claims of the token, like Issuer, Expiration, Subject, and the ID
     //2. Sign the JWT using the HS512 algorithm and secretKey key.
@@ -106,16 +111,23 @@ public class JWTUtility implements Serializable{
                         .setClaims(claims)
                         .setSubject(subject)
                         .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + JWT_TOKEN_VALIDITY * 1000))
+                .setExpiration(new Date(System.currentTimeMillis() + Long.parseLong(jwtTokenValidity) * 1000))
                 .signWith(SignatureAlgorithm.HS512, secretKey).compact();
     }
-
 
     //validate token
     public Boolean validateToken(String token, UserDetails userDetails) {
         final String username = getUsernameFromToken(token);
         return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }
-
     
+    public String doGenerateRefreshToken(Map<String, Object> claims, String subject) {
+        return Jwts
+                        .builder()
+                        .setClaims(claims)
+                        .setSubject(subject)
+                        .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + Long.parseLong(jwtRefreshTokenValidity)))
+                .signWith(SignatureAlgorithm.HS512, secretKey).compact();
+    }
 }

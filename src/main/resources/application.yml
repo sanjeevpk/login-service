@@ -1,5 +1,18 @@
 server:
   port: 8080
-  
+---  
+
 jwt:
   secret: secret123
+  token:
+    validity: 0
+  refreshToken:
+    validity: 9000000
+---
+#spring:#  datasource:#    url: jdbc:mysql://localhost/sansys_login?createDatabaseIfNotExist=true&autoReconnect=true&useSSL=false
+#    username: root
+#    password: root
+#---
+
+spring:  jpa:    show-sql: true
+    hibernate:      ddl-auto: create-drop
