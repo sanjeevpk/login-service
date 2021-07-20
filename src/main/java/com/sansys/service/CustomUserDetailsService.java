@@ -15,11 +15,17 @@ package com.sansys.service;
 
 import java.util.ArrayList;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import com.sansys.dto.UserDTO;
+import com.sansys.entity.UsersEntity;
+import com.sansys.repository.UsersRepository;
 
 /**
  * 
@@ -31,6 +37,12 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService{
+    
+    @Autowired
+    private PasswordEncoder bcryptEncoder;
+    
+    @Autowired
+    private UsersRepository usersRepository;
 
     /* (non-Javadoc)
      * @see org.springframework.security.core.userdetails.UserDetailsService#loadUserByUsername(java.lang.String)
@@ -38,6 +50,20 @@ public class CustomUserDetailsService implements UserDetailsService{
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return new User("admin", "admin", new ArrayList<>());
+    }
+
+    /**
+     * @param user
+     * @return
+     */
+    public UsersEntity save(UserDTO user) {
+        UsersEntity newUser = new UsersEntity();
+        newUser.setUserName(user.getUsername());
+        newUser.setPassword(bcryptEncoder.encode(user.getPassword()));
+        newUser.setUserRole("ROLE_USER");
+//        newUser.setCreatedBy(user.getUsername());
+//        newUser.setCreatedAt(Timestamp.valueOf(LocalDateTime.now()));
+        return usersRepository.save(newUser);
     }
 
 }
