@@ -28,5 +28,11 @@ import com.sansys.entity.UsersEntity;
 
 @Repository
 public interface UsersRepository extends JpaRepository<UsersEntity, Long> {
+
+    /**
+     * @param username
+     * @return
+     */
+    UsersEntity findByUserName(String username);
     
 }

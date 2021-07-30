@@ -23,7 +23,7 @@ package com.sansys.utility;
 public class ApplicationConstants {
 
     public static final String EXCEPTION = "exception";
-    public static final String REFRESHTOKEN = "refreshtoken";
+    public static final String REFRESHTOKEN = "/refreshtoken";
     public static final String TRUE = "true";
     public static final String IS_REFRESH_TOKEN = "isRefreshToken";
     public static final String BEARER = "Bearer ";

@@ -27,8 +27,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class HomeController {
 
-    @GetMapping("/")
+    @GetMapping("/dashboard")
     public String home() {
-        return "Welcome!!!";
+        return "Welcome User!!!";
+    }
+    
+    @GetMapping("/admin/dashboard")
+    public String adminHome() {
+        return "Welcome Admin!!!";
     }
 }

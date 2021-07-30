@@ -14,14 +14,18 @@
 package com.sansys.service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import com.sansys.dto.UserDTO;
 import com.sansys.entity.UsersEntity;
@@ -49,21 +53,34 @@ public class CustomUserDetailsService implements UserDetailsService{
      */
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return new User("admin", "admin", new ArrayList<>());
+        List<SimpleGrantedAuthority> roles = null;
+        
+        
+        UsersEntity user = usersRepository.findByUserName(username);
+        if (user != null) {
+            roles = Arrays.asList(new SimpleGrantedAuthority(user.getUserRole()));
+            return new User(user.getUserName(), user.getPassword(), roles);
+        }
+        throw new UsernameNotFoundException("User not found with the name " + username);
+//        return new User("admin", "$2y$12$qcu33a.OPJHPDk1UYRKXEuKmsuD6wrn1r4X2hTjjyqvm7ny0M4Gvy", new ArrayList<>());
     }
 
     /**
      * @param user
      * @return
      */
+    @SuppressWarnings("deprecation")
     public UsersEntity save(UserDTO user) {
         UsersEntity newUser = new UsersEntity();
         newUser.setUserName(user.getUsername());
         newUser.setPassword(bcryptEncoder.encode(user.getPassword()));
-        newUser.setUserRole("ROLE_USER");
-//        newUser.setCreatedBy(user.getUsername());
-//        newUser.setCreatedAt(Timestamp.valueOf(LocalDateTime.now()));
+       
+        
+        if(!StringUtils.isEmpty(user.getRole())) {
+            newUser.setUserRole(user.getRole());
+        } else {
+            newUser.setUserRole("ROLE_USER");
+        }
         return usersRepository.save(newUser);
     }
-
 }

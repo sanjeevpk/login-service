@@ -47,6 +47,9 @@ public class SpringSecurityConfiguration extends WebSecurityConfigurerAdapter{
     @Autowired
     private JWTAuthenticationFilter jwtAuthenticationFilter;
     
+    @Autowired
+    private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    
     /* (non-Javadoc)
      * @see org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter#configure(org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder)
      */
@@ -71,6 +74,8 @@ public class SpringSecurityConfiguration extends WebSecurityConfigurerAdapter{
             .csrf()
             .disable()
             .authorizeRequests()
+            .antMatchers("/admin**").hasRole("ADMIN")
+            .antMatchers("/login").hasAnyRole("USER","ROLE_ADMIN")
             .antMatchers(
                 "/favicon.ico",
                 "/**/*.png",
@@ -87,6 +92,7 @@ public class SpringSecurityConfiguration extends WebSecurityConfigurerAdapter{
             .permitAll()
             .anyRequest()
             .authenticated()
+            .and().exceptionHandling().authenticationEntryPoint(jwtAuthenticationEntryPoint)
             .and()
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 

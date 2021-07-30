@@ -1,17 +1,20 @@
 package com.sansys.filter;
 
 import java.io.IOException;
+
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.sansys.service.CustomUserDetailsService;
@@ -46,7 +49,7 @@ import io.jsonwebtoken.ExpiredJwtException;
 public class JWTAuthenticationFilter extends OncePerRequestFilter{
 
     @Autowired
-    private JWTUtility jwtUtikity;
+    private JWTUtility jwtUtiity;
     
     @Autowired
     CustomUserDetailsService customUserDetailsService;
@@ -58,41 +61,38 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter{
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
         throws ServletException, IOException {
         
-        String authorizationHeader = request.getHeader(ApplicationConstants.AUTHORIZATION);
-        String userName = null;
-        String token = null;
-        
-        if(authorizationHeader != null && authorizationHeader.startsWith(ApplicationConstants.BEARER)) {
-            token = authorizationHeader.substring(7);
-            
-            try {
-                
-                userName = jwtUtikity.getUsernameFromToken(token);
-                
-            }catch(ExpiredJwtException e){
-                System.out.println("JWT Token Expired !!!");
-                String isRefreshToken = request.getHeader(ApplicationConstants.IS_REFRESH_TOKEN);
+        try{
+            // JWT Token is in the form "Bearer token". Remove Bearer word and
+            // get  only the Token
+            String jwtToken = extractJwtFromRequest(request);
+
+            if (StringUtils.hasText(jwtToken) && jwtUtiity.validateToken(jwtToken)) {
+                UserDetails userDetails = new User(jwtUtiity.getUsernameFromToken(jwtToken), "",
+                    jwtUtiity.getRolesFromToken(jwtToken));
+
+                UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
+                // After setting the Authentication in the context, we specify
+                // that the current user is authenticated. So it passes the
+                // Spring Security Configurations successfully.
+                SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+            } else {
+                System.out.println("Cannot set the Security Context");
+            }
+         }catch(ExpiredJwtException ex)
+         {
+             String isRefreshToken = request.getHeader("isRefreshToken");
                 String requestURL = request.getRequestURL().toString();
                 // allow for Refresh Token creation if following conditions are true.
-                if (isRefreshToken != null && isRefreshToken.equals(ApplicationConstants.TRUE) && requestURL.contains(ApplicationConstants.REFRESHTOKEN)) {
-                    allowForRefreshToken(e, request);
+                if (isRefreshToken != null && isRefreshToken.equals("true") && requestURL.contains("refreshtoken")) {
+                    allowForRefreshToken(ex, request);
                 } else
-                    request.setAttribute(ApplicationConstants.EXCEPTION, e);
-
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-            }
-            
-            UserDetails userDetails = customUserDetailsService.loadUserByUsername(userName);
-            if(userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
-            }
-        } else {
-            System.out.println("Invalid Token!");
-        }
+                    request.setAttribute("exception", ex);
+         }
+         catch(BadCredentialsException ex)
+         {
+             request.setAttribute("exception", ex);
+         }
         filterChain.doFilter(request, response);
     }
     
@@ -111,4 +111,11 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter{
 
     }
 
+    private String extractJwtFromRequest(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7, bearerToken.length());
+        }
+        return null;
+    }
 }
