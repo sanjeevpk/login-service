@@ -15,15 +15,15 @@ authentication using spring security, JWT and H2 Database
 
 ## TODO
 
-Different checks like
-	last login date and time
-	active or inactive
-	disabled or enabled
-	lastToken
-	lastTokenAccessedAt
-	login with facebook
-	login with github
-	points for logged in users
+- Different checks like last login date and time
+- active or inactive
+- disabled or enabled
+- lastToken
+- lastTokenAccessedAt
+- 2FA implementation
+- login with facebook
+- login with github
+- points for logged in users
 	
 
   
