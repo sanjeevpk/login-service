@@ -50,17 +50,15 @@ public class SpringSecurityConfiguration extends WebSecurityConfigurerAdapter{
     @Autowired
     private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     
+    @Autowired
+    private com.sansys.config.Encoder encoder;
+    
     /* (non-Javadoc)
      * @see org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter#configure(org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder)
      */
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(customUserDetailsService).passwordEncoder(passwordEncoder());
-    }
-    
-    @Bean
-    public PasswordEncoder passwordEncoder(){
-        return new BCryptPasswordEncoder();
+        auth.userDetailsService(customUserDetailsService).passwordEncoder(encoder.passwordEncoder());
     }
     
     /* (non-Javadoc)
