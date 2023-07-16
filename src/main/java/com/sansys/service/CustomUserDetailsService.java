@@ -75,6 +75,10 @@ public class CustomUserDetailsService implements UserDetailsService{
         newUser.setUserName(user.getUsername());
         newUser.setPassword(bcryptEncoder.encode(user.getPassword()));
        
+        UsersEntity findByUserName = usersRepository.findByUserName(user.getUsername());
+        if(findByUserName != null) {
+          throw new RuntimeException("Username already exists!");
+        }
         
         if(!StringUtils.isEmpty(user.getRole())) {
             newUser.setUserRole(user.getRole());
